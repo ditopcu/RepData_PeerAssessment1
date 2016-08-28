@@ -1,79 +1,33 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
-
-
-```{r message = FALSE}
 library(lubridate)
 library(dplyr)
 library(ggplot2)
 library(tidyr)
-library(xtable)
 
 
 setwd("C:\\Users\\ditop\\mygit\\RepData_PeerAssessment1")
 unzip(zipfile="activity.zip")
 
-```
 
-## Loading and preprocessing the data
-
-Use read.csv() function to read "activity.csv", convert date string to date objects with lubridate package.
-
-```{r}
 rawdata <- tbl_df( read.csv("activity.csv", stringsAsFactors = FALSE) )
+
 dt <- rawdata %>% mutate(date = ymd(date))
 
-```
 
-
-
-## What is mean total number of steps taken per day?
-
-Calculate total steps by day.
-
-```{r}
 steps.per.day <- dt %>%
                  filter(!is.na(steps)) %>%
                  group_by(date) %>%
                  summarise(total.steps = sum(steps))
 
-```
 
-Histogram of the total number of steps taken each day:
-```{r}
+
 ggplot (steps.per.day, aes(x=total.steps)) + 
   geom_histogram( binwidth = 1000, fill = "blue") +
   labs(x= "Total Steps")
-```
-
-
-Mean and median number of steps taken each day:
-
-```{r, results='hide'}
-
-mean.org <- mean(steps.per.day$total.steps)
-median.org <- median(steps.per.day$total.steps)
-mmdata <-data.frame("Data" = "Omiting NAs", "Mean Total Steps" = mean.org, "Median Total Steps" = median.org, stringsAsFactors = FALSE)
-```
 
 
 
-```{r results='asis'} 
-
-print(xtable(mmdata), comment = FALSE, type ="html", include.rownames=FALSE)
 
 
-```
-
-## What is the average daily activity pattern?
-
-
-
-```{r}
 average.interval <- dt %>%
                     filter(!is.na(steps)) %>%
                     group_by(interval) %>%
@@ -84,20 +38,18 @@ ggplot(average.interval, aes(x = interval, y = average.steps)) +
   geom_line() +
   labs(x="Interval", y="Average Steps")
 
-```
 
-The 5-minute interval that, on average, contains the maximum number of steps(`r arrange(average.interval, desc(average.steps))[1,]$average.steps`):
-
-```{r}
 arrange(average.interval, desc(average.steps))[1,]$interval
+#average.interval[average.interval$average.steps==max(average.interval$average.steps),]
 
-```
 
-## Imputing missing values
-```{r }
+missing.values<- sum(is.na(activity$steps))
+
 missing <- is.na(dt$steps)
 # How many missing
 table(missing)
+
+
 dt.replaceNA <-     dt %>%
                     group_by(interval)  %>%
                     mutate(steps= ifelse(is.na(steps), mean(steps, na.rm=TRUE), steps))
@@ -115,27 +67,17 @@ ggplot (steps.per.day.wo.nas, aes(x=total.steps)) +
 
 
 
+
+
+
 mean.wo.nas <- mean(steps.per.day.wo.nas$total.steps)
 median.wo.nas <- median(steps.per.day.wo.nas$total.steps)
 
-
-mmdata<-rbind(mmdata,c("With out NAs", mean.wo.nas,median.wo.nas))
-
-```
-
-Mean and median values:
-```{r results='asis'} 
-
-print(xtable(mmdata), comment = FALSE, type ="html", include.rownames=FALSE)
+paste(mean.org, " " , mean.wo.nas)
+paste(median.org, " " , median.wo.nas)
 
 
-```
 
-
-## Are there differences in activity patterns between weekdays and weekends?
-
-
-```{r }
 dt.replaceNA <- dt.replaceNA %>%
                 mutate( day = wday(date, label =TRUE), day.type = day )
 
@@ -153,4 +95,5 @@ ggplot(average.interval.wo.nas, aes(x = interval, y = average.steps)) +
   labs(x="Interval", y="Average Steps")+
   facet_grid(day.type~.)
 
-```
+
+
